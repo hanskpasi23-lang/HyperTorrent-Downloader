@@ -29,19 +29,31 @@ An ultra high-speed, modern **BitTorrent download engine & Glassmorphic Web Dash
 
 ## 🖥 Quick Start
 
-### 1. Launch the Torrent Engine Daemon
+### ⚡ Option A: Launch as Native Desktop Application (Electron)
+HyperTorrent includes a native Windows desktop client with system tray support, minimize-to-tray background downloading, and OS-level `magnet:` deep-linking.
+
+1. **Run in Desktop Mode**:
+   ```bash
+   npm run desktop
+   ```
+2. **Build Standalone Windows Executable (.exe)**:
+   ```bash
+   npm run build:portable   # Creates a standalone portable .exe in release/
+   npm run build:exe        # Creates a full NSIS installer
+   ```
+   The generated executable will be saved in `release/`. Users can simply double-click `HyperTorrent.exe` to run the client without needing Node.js or terminal commands!
+
+---
+
+### 🌐 Option B: Launch as Web Daemon
 ```bash
 npm start
 ```
-The server will start on port `3000`.
+The server will start on port `3000`. Open your browser to `http://localhost:3000`.
 
-### 2. Open the Web Dashboard
-Open your web browser and navigate to:
-```
-http://localhost:3000
-```
+---
 
-### 3. (Optional) Install the Browser Extension
+### 🧩 Option C: (Optional) Install the Browser Extension
 1. Open Chrome/Edge/Brave and navigate to `chrome://extensions/`.
 2. Toggle on **Developer mode** (top right corner).
 3. Click **Load unpacked** and select the `extension/` folder inside this project.
