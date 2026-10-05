@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HyperTorrent - Ultra high-speed, modern BitTorrent download engine with real-time swarm telemetry, live piece visualizer, and in-flight media streaming.">
+  <title>HyperTorrent — High-Speed BitTorrent Engine & Web Dashboard</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container" id="app">
+    <!-- Top Navigation & Global Telemetry Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">HYPER<span>TORRENT</span></h1>
+          <div class="brand-badge">
+            <span class="pulse-indicator online" id="status-indicator"></span>
+            <span id="daemon-status-text">ENGINE ONLINE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Speedometer Telemetry Widgets -->
+      <div class="telemetry-hub">
+        <div class="telemetry-card download">
+          <div class="telemetry-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+            </svg>
+          </div>
+          <div class="telemetry-info">
+            <span class="telemetry-label">DOWNLOAD</span>
+            <span class="telemetry-value font-mono" id="global-down-speed">0.00 B/s</span>
+          </div>
+        </div>
+
+        <div class="telemetry-card upload">
+          <div class="telemetry-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/>
+            </svg>
+          </div>
+          <div class="telemetry-info">
+            <span class="telemetry-label">UPLOAD</span>
+            <span class="telemetry-value font-mono" id="global-up-speed">0.00 B/s</span>
+          </div>
+        </div>
+
+        <div class="telemetry-mini-group">
+          <div class="telemetry-pill">
+            <span class="pill-label">RATIO</span>
+            <span class="pill-val font-mono" id="global-ratio">0.00</span>
+          </div>
+          <div class="telemetry-pill">
+            <span class="pill-label">ACTIVE</span>
+            <span class="pill-val font-mono" id="global-active-count">0</span>
+          </div>
+          <div class="telemetry-pill" title="Live BitTorrent Community Trackers Pool">
+            <span class="pill-label">TRACKERS</span>
+            <span class="pill-val font-mono" id="global-trackers-count">0 LIVE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button class="btn btn-turbo" id="btn-turbo-all" title="⚡ Turbo Boost All Active Downloads (Injects 90+ Live Trackers & Re-Announces Swarm)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>Turbo Boost All</span>
+        </button>
+        <button class="btn btn-accent" id="btn-open-search-modal" title="Search Torrents & Auto-Filter Best Swarm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Search Swarms</span>
+        </button>
+        <button class="btn btn-primary" id="btn-open-magnet-modal" title="Add Magnet Link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14m-7-7h14"/>
+          </svg>
+          <span>Add Magnet</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-open-upload-modal" title="Upload .torrent File">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          <span>Upload .torrent</span>
+        </button>
+        <button class="btn btn-icon-glass" id="btn-register-handler" title="Enable One-Click Browser Magnet Catch (Native Handler)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 3v7a6 6 0 0 0 12 0V3M4 3h4M16 3h4M4 8h4M16 8h4"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="main-content">
+      <!-- Controls Toolbar (Search, Filter Tabs, Speed Graph Toggle) -->
+      <div class="toolbar">
+        <div class="filter-tabs" id="filter-tabs">
+          <button class="tab-btn active" data-filter="all" id="filter-all">All <span class="badge" id="count-all">0</span></button>
+          <button class="tab-btn" data-filter="downloading" id="filter-downloading">Downloading <span class="badge" id="count-downloading">0</span></button>
+          <button class="tab-btn" data-filter="completed" id="filter-completed">Completed <span class="badge" id="count-completed">0</span></button>
+          <button class="tab-btn" data-filter="paused" id="filter-paused">Paused <span class="badge" id="count-paused">0</span></button>
+        </div>
+
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="torrent-search-input" placeholder="Filter by name or info hash..." aria-label="Search torrents">
+        </div>
+      </div>
+
+      <!-- Live Bandwidth Sparkline Visualizer -->
+      <div class="bandwidth-monitor-panel">
+        <div class="monitor-header">
+          <span class="monitor-title">LIVE BANDWIDTH GRAPH (60s)</span>
+          <div class="monitor-legend">
+            <span class="legend-item"><span class="legend-dot down"></span> Download</span>
+            <span class="legend-item"><span class="legend-dot up"></span> Upload</span>
+          </div>
+        </div>
+        <canvas id="bandwidth-canvas" width="1200" height="90"></canvas>
+      </div>
+
+      <!-- Torrents List / Grid Section -->
+      <section class="torrents-container" id="torrents-list-view">
+        <!-- Empty State Container -->
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+          </div>
+          <h2 class="empty-title">No Active Torrents</h2>
+          <p class="empty-desc">Add a magnet link or drag and drop a <code>.torrent</code> file to ignite high-speed P2P downloading.</p>
+          <div class="empty-actions">
+            <button class="btn btn-primary" id="btn-empty-add-magnet">Add Magnet Link</button>
+            <button class="btn btn-secondary" id="btn-empty-demo-torrent">Try Legal Test Torrent</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Torrents Cards will be rendered here -->
+        <div class="torrents-grid" id="torrents-grid"></div>
+      </section>
+    </main>
+
+    <!-- Slide-Over Torrent Detail Inspector Panel -->
+    <aside class="detail-drawer" id="detail-drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <span class="drawer-badge" id="drawer-status-badge">DOWNLOADING</span>
+          <h3 class="drawer-title" id="drawer-torrent-title">Torrent Details</h3>
+          <span class="drawer-hash font-mono" id="drawer-torrent-hash">HASH: ...</span>
+        </div>
+        <div class="drawer-header-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-drawer-pause-toggle" title="Pause or Resume Torrent">
+            <svg id="drawer-pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            <span id="btn-drawer-pause-text">Pause</span>
+          </button>
+          <button class="btn btn-turbo btn-sm" id="btn-drawer-boost" title="⚡ Turbo Boost this torrent (Inject live community trackers & force swarm re-announce)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <span id="btn-drawer-boost-text">Turbo Boost</span>
+          </button>
+          <button class="btn-icon" id="btn-close-drawer" aria-label="Close Inspector">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drawer Navigation Tabs -->
+      <div class="drawer-tabs">
+        <button class="drawer-tab-btn active" data-drawer-tab="overview">Overview</button>
+        <button class="drawer-tab-btn" data-drawer-tab="pieces">Piece Matrix</button>
+        <button class="drawer-tab-btn" data-drawer-tab="peers">Peers & Swarm (<span id="drawer-peer-count">0</span>)</button>
+        <button class="drawer-tab-btn" data-drawer-tab="files">Files (<span id="drawer-file-count">0</span>)</button>
+      </div>
+
+      <!-- Drawer Tab Content Bodies -->
+      <div class="drawer-content">
+        <!-- Overview Tab -->
+        <div class="drawer-tab-pane active" id="tab-pane-overview">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="m-label">DOWNLOADED / TOTAL</span>
+              <span class="m-val font-mono" id="ov-downloaded">0 B / 0 B</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">TRANSFER RATE</span>
+              <span class="m-val font-mono" id="ov-rates">↓ 0 B/s | ↑ 0 B/s</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">ESTIMATED TIME (ETA)</span>
+              <span class="m-val font-mono" id="ov-eta">--</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">PIECES</span>
+              <span class="m-val font-mono" id="ov-pieces">0 pieces × 0 KB</span>
+            </div>
+          </div>
+
+          <div class="drawer-section">
+            <h4 class="section-title">Save Directory</h4>
+            <div class="code-box font-mono" id="ov-savedir">./downloads</div>
+          </div>
+
+          <div class="drawer-section">
+            <div class="section-title-row">
+              <h4 class="section-title">Active Trackers (<span id="ov-trackers-count">0</span>)</h4>
+              <button class="btn-xs" id="btn-refresh-trackers" title="Harvest latest live trackers & force re-announce">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                <span>Re-Announce</span>
+              </button>
+            </div>
+            <ul class="trackers-list font-mono" id="ov-trackers-list">
+              <li>Connecting to DHT & Trackers...</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Live Piece Matrix Tab -->
+        <div class="drawer-tab-pane" id="tab-pane-pieces">
+          <div class="pieces-header">
+            <div class="pieces-info">
+              <span>Pieces Downloaded: <strong id="piece-stat-counts" class="font-mono">0 / 0</strong></span>
+              <span class="piece-legend">
+                <span class="p-dot verified"></span> Complete
+                <span class="p-dot pending"></span> Missing
+              </span>
+            </div>
+            <div class="piece-hover-tip font-mono" id="piece-hover-tip">Hover over pieces to inspect</div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="pieces-canvas" width="600" height="280"></canvas>
+          </div>
+        </div>
+
+        <!-- Peers Tab -->
+        <div class="drawer-tab-pane" id="tab-pane-peers">
+          <div class="table-responsive">
+            <table class="data-table" id="peers-table">
+              <thead>
+                <tr>
+                  <th>IP & Port</th>
+                  <th>Client</th>
+                  <th>Down Speed</th>
+                  <th>Up Speed</th>
+                  <th>Downloaded</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="peers-table-body">
+                <tr><td colspan="6" class="text-center">Searching swarm for peers...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Files Tab -->
+        <div class="drawer-tab-pane" id="tab-pane-files">
+          <div class="files-header">
+            <span class="files-title">Select files to include or prioritize:</span>
+          </div>
+          <div class="files-list" id="files-list-container">
+            <!-- Dynamically populated files -->
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Modal: Add Magnet Link -->
+    <div class="modal-backdrop" id="modal-magnet" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Add Magnet URI</h3>
+          <button class="btn-close-modal" id="btn-close-magnet-modal">✕</button>
+        </div>
+        <div class="modal-body">
+          <label for="magnet-input" class="form-label">Magnet Link or InfoHash</label>
+          <textarea id="magnet-input" class="form-control font-mono" rows="4" placeholder="magnet:?xt=urn:btih:..."></textarea>
+          <div class="sample-links">
+            <span class="sample-label">Quick Test Torrents:</span>
+            <button class="chip-btn" id="chip-ubuntu">Ubuntu 24.04 ISO</button>
+            <button class="chip-btn" id="chip-bigbuck">Big Buck Bunny (4K Streamable)</button>
+            <button class="chip-btn" id="chip-sintel">Sintel (Animation Movie)</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-cancel-magnet">Cancel</button>
+          <button class="btn btn-primary" id="btn-submit-magnet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14m-7-7h14"/>
+            </svg>
+            <span>Start Download</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Upload .torrent File -->
+    <div class="modal-backdrop" id="modal-upload" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Upload .torrent File</h3>
+          <button class="btn-close-modal" id="btn-close-upload-modal">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="drop-zone" id="torrent-drop-zone">
+            <input type="file" id="torrent-file-input" accept=".torrent" class="file-input-hidden">
+            <div class="drop-content">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+              <p class="drop-text">Drag & drop your <strong>.torrent</strong> file here</p>
+              <span class="drop-subtext">or click to browse your computer</span>
+            </div>
+            <div class="selected-file-info" id="selected-file-info" style="display: none;">
+              <span class="file-name font-mono" id="selected-file-name">filename.torrent</span>
+              <button class="btn-icon danger" id="btn-clear-file">✕</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-cancel-upload">Cancel</button>
+          <button class="btn btn-primary" id="btn-submit-upload" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14m-7-7h14"/>
+            </svg>
+            <span>Upload & Start</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Search Swarms & Auto-Filter -->
+    <div class="modal-backdrop" id="modal-search" aria-hidden="true">
+      <div class="modal-card modal-large">
+        <div class="modal-header">
+          <div class="stream-title-box">
+            <span class="stream-tag">SWARM DISCOVERY & FILTER</span>
+            <h3 class="modal-title">Search & Auto-Add Torrents</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-search-modal">✕</button>
+        </div>
+
+        <div class="search-modal-nav">
+          <button class="search-tab-btn active" id="search-tab-indexer" data-tab="indexer">Global Swarm Indexer</button>
+          <button class="search-tab-btn" id="search-tab-sniffer" data-tab="sniffer">Webpage Link Sniffer</button>
+        </div>
+
+        <div class="modal-body search-modal-body">
+          <!-- View 1: Global Swarm Indexer Search -->
+          <div class="search-view active" id="view-indexer">
+            <div class="search-input-group">
+              <input type="text" id="indexer-search-input" class="form-control" placeholder="Search movies, Linux ISOs, open source software, music...">
+              <button class="btn btn-primary" id="btn-execute-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span>Search</span>
+              </button>
+            </div>
+
+            <!-- Auto-Add Switch Option -->
+            <div class="auto-filter-option">
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-auto-add">
+                <span class="slider"></span>
+              </label>
+              <div class="auto-filter-text">
+                <strong>Auto-Add Healthiest Swarm (Zero Clicks)</strong>
+                <p>Automatically filters the #1 torrent with the most seeders and starts downloading immediately upon searching.</p>
+              </div>
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div class="sample-links">
+              <span class="sample-label">Trending Searches:</span>
+              <button class="chip-btn search-suggest-chip" data-query="Ubuntu">Ubuntu Linux</button>
+              <button class="chip-btn search-suggest-chip" data-query="Debian">Debian</button>
+              <button class="chip-btn search-suggest-chip" data-query="Blender">Blender 3D</button>
+              <button class="chip-btn search-suggest-chip" data-query="Big Buck Bunny">Big Buck Bunny</button>
+            </div>
+
+            <!-- Search Results Area -->
+            <div class="search-results-list" id="search-results-container">
+              <div class="search-placeholder">
+                <p>Type a query above to search across active swarms and filter by maximum seeders for high speed.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 2: Webpage Link Sniffer -->
+          <div class="search-view" id="view-sniffer" style="display: none;">
+            <p class="sniffer-desc">Found a webpage or forum thread with magnet links? Paste the webpage URL below and HyperTorrent will auto-extract, filter, and add all healthy magnets:</p>
+            <div class="search-input-group">
+              <input type="url" id="sniffer-url-input" class="form-control" placeholder="https://example.com/download-page">
+              <button class="btn btn-primary" id="btn-execute-sniff">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span>Extract Magnets</span>
+              </button>
+            </div>
+
+            <div class="search-results-list" id="sniffer-results-container">
+              <div class="search-placeholder">
+                <p>Paste any web page link above to automatically parse and filter magnet links.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: In-Flight Media Streamer -->
+    <div class="modal-backdrop" id="modal-stream" aria-hidden="true">
+      <div class="modal-card modal-large">
+        <div class="modal-header">
+          <div class="stream-title-box">
+            <span class="stream-tag">LIVE P2P STREAM</span>
+            <h3 class="modal-title" id="stream-file-title">Media Streaming</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-stream-modal">✕</button>
+        </div>
+        <div class="modal-body stream-player-body">
+          <div class="video-wrapper">
+            <video id="stream-video-player" controls preload="metadata">
+              Your browser does not support HTML5 video streaming.
+            </video>
+          </div>
+          <div class="stream-telemetry">
+            <span>Buffer Health: <strong id="stream-buffer-status">Streaming directly from peer swarm</strong></span>
+            <span class="font-mono" id="stream-file-size">0 MB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <!-- Client Application Logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>
