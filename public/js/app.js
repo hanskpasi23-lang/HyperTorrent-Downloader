@@ -1040,6 +1040,43 @@ function checkUrlParamsForMagnets() {
 }
 
 // --------------------------------------------------------------------------
+// Desktop / Electron Integration
+// --------------------------------------------------------------------------
+
+function setupDesktopIntegration() {
+  const btnOpenFolder = document.getElementById('btn-open-downloads-folder');
+  if (btnOpenFolder) {
+    btnOpenFolder.addEventListener('click', async () => {
+      if (window.electronAPI?.openDownloadsFolder) {
+        await window.electronAPI.openDownloadsFolder();
+        showToast('Opening Downloads folder in File Explorer...', 'info');
+      } else {
+        showToast('Downloads folder: ./downloads', 'info');
+      }
+    });
+  }
+
+  // Also make save-dir in drawer clickable
+  const saveDirEl = document.getElementById('ov-savedir');
+  if (saveDirEl) {
+    saveDirEl.style.cursor = 'pointer';
+    saveDirEl.title = 'Click to open in File Explorer';
+    saveDirEl.addEventListener('click', () => {
+      if (window.electronAPI?.openDownloadsFolder) {
+        window.electronAPI.openDownloadsFolder();
+      }
+    });
+  }
+
+  // Listen for incoming magnet links pushed from Electron
+  if (window.electronAPI?.onMagnetReceived) {
+    window.electronAPI.onMagnetReceived((magnetUri) => {
+      showToast('⚡ Magnet link auto-received from desktop!', 'success');
+    });
+  }
+}
+
+// --------------------------------------------------------------------------
 // Search Swarms & Webpage Sniffer Modal
 // --------------------------------------------------------------------------
 
@@ -1394,6 +1431,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setupTurboBoostControls();
   initWebSocket();
   checkUrlParamsForMagnets();
+  setupDesktopIntegration();
 });
 
 

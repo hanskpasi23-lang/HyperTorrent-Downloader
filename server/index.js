@@ -24,10 +24,10 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 const PORT = process.env.PORT || 3000;
-const manager = new TorrentManager({
-  downloadDir: path.resolve(__dirname, '../downloads')
+export const manager = new TorrentManager({
+  downloadDir: process.env.DOWNLOAD_DIR || path.resolve(__dirname, '../downloads')
 });
-const searchEngine = new SearchEngine();
+export const searchEngine = new SearchEngine();
 
 // Configure Multer for .torrent file uploads (stored in memory)
 const upload = multer({
