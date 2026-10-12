@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="HyperTorrent - Ultra high-speed, modern BitTorrent download engine with real-time swarm telemetry, live piece visualizer, and in-flight media streaming.">
+  <meta name="theme-color" content="#060911">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HyperTorrent">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>HyperTorrent — High-Speed BitTorrent Engine & Web Dashboard</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="css/style.css?v=2.2.1">
+</head>
+<body>
+  <div class="app-container" id="app">
+    <!-- Top Navigation & Global Telemetry Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">HYPER<span>TORRENT</span></h1>
+          <div class="brand-badge">
+            <span class="pulse-indicator online" id="status-indicator"></span>
+            <span id="daemon-status-text">ENGINE ONLINE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Speedometer Telemetry Widgets -->
+      <div class="telemetry-hub">
+        <div class="telemetry-card download">
+          <div class="telemetry-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+            </svg>
+          </div>
+          <div class="telemetry-info">
+            <span class="telemetry-label">DOWNLOAD</span>
+            <span class="telemetry-value font-mono" id="global-down-speed">0.00 B/s</span>
+          </div>
+        </div>
+
+        <div class="telemetry-card upload">
+          <div class="telemetry-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/>
+            </svg>
+          </div>
+          <div class="telemetry-info">
+            <span class="telemetry-label">UPLOAD</span>
+            <span class="telemetry-value font-mono" id="global-up-speed">0.00 B/s</span>
+          </div>
+        </div>
+
+        <div class="telemetry-mini-group">
+          <div class="telemetry-pill">
+            <span class="pill-label">RATIO</span>
+            <span class="pill-val font-mono" id="global-ratio">0.00</span>
+          </div>
+          <div class="telemetry-pill">
+            <span class="pill-label">ACTIVE</span>
+            <span class="pill-val font-mono" id="global-active-count">0</span>
+          </div>
+          <div class="telemetry-pill" title="Live BitTorrent Community Trackers Pool">
+            <span class="pill-label">TRACKERS</span>
+            <span class="pill-val font-mono" id="global-trackers-count">0 LIVE</span>
+          </div>
+        </div>
+
+        <!-- Live SSD Storage Gauge Widget -->
+        <div class="telemetry-card disk-gauge-card" id="btn-open-disk-modal" title="Live SSD Storage Telemetry & Auto-Cleanup Manager" role="button" tabindex="0" style="display: none;">
+          <div class="telemetry-icon disk-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"></path>
+              <path d="M2 16h20"></path>
+            </svg>
+          </div>
+          <div class="telemetry-info disk-telemetry-info">
+            <div class="disk-meta-row">
+              <span class="telemetry-label">SSD STORAGE</span>
+              <span class="disk-badge-pill ok" id="header-disk-badge">NORMAL</span>
+            </div>
+            <div class="disk-bar-track">
+              <div class="disk-bar-fill" id="header-disk-bar" style="width: 0%;"></div>
+            </div>
+            <div class="disk-legend font-mono">
+              <span id="header-disk-text">-- / --</span>
+              <span id="header-disk-percent" class="disk-percent-num">0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button class="btn btn-turbo" id="btn-turbo-all" title="⚡ Turbo Boost All Active Downloads (Injects 90+ Live Trackers & Re-Announces Swarm)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>Turbo Boost All</span>
+        </button>
+        <button class="btn btn-accent" id="btn-open-search-modal" title="Search Torrents & Auto-Filter Best Swarm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Search Swarms</span>
+        </button>
+        <button class="btn btn-primary" id="btn-open-magnet-modal" title="Add Magnet Link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14m-7-7h14"/>
+          </svg>
+          <span>Add Magnet</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-open-upload-modal" title="Upload .torrent File">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          <span>Upload .torrent</span>
+        </button>
+        <div class="header-util-group">
+          <button class="btn-icon-glass" id="btn-open-proxy-modal" title="Proxy Settings — Bypass ISP Throttling" aria-label="Configure Proxy Settings" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+          <button class="btn-icon-glass" id="btn-open-disk-modal-util" title="Disk Storage & Auto-Cleanup Manager" aria-label="Open Disk Storage Manager" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"></path>
+              <path d="M2 16h20"></path>
+            </svg>
+          </button>
+          <!-- Authenticated User Profile Pill -->
+          <div class="user-profile-badge" id="header-user-badge" style="display: none;" title="Current Logged In User">
+            <img class="user-avatar" id="header-user-avatar" src="" alt="Avatar" style="display: none;" />
+            <span class="user-avatar-initials" id="header-user-initials">U</span>
+            <div class="user-meta">
+              <span class="user-email" id="header-user-email">admin@local</span>
+              <span class="user-role-tag admin" id="header-user-role">ADMIN</span>
+            </div>
+          </div>
+          <button class="btn-icon-glass" id="btn-open-security-modal" title="Security, Users & Google OAuth Hub" aria-label="Open Security Settings" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </button>
+          <button class="btn-icon-glass" id="btn-logout-header" title="Lock Session / Log Out" aria-label="Log Out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="main-content">
+      <!-- Controls Toolbar (Search, Filter Tabs, Speed Graph Toggle) -->
+      <div class="toolbar">
+        <div class="filter-tabs" id="filter-tabs">
+          <button class="tab-btn active" data-filter="all" id="filter-all">All <span class="badge" id="count-all">0</span></button>
+          <button class="tab-btn" data-filter="downloading" id="filter-downloading">Downloading <span class="badge" id="count-downloading">0</span></button>
+          <button class="tab-btn" data-filter="queued" id="filter-queued">Queued <span class="badge" id="count-queued">0</span></button>
+          <button class="tab-btn" data-filter="completed" id="filter-completed">Completed <span class="badge" id="count-completed">0</span></button>
+          <button class="tab-btn" data-filter="paused" id="filter-paused">Paused <span class="badge" id="count-paused">0</span></button>
+        </div>
+
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="torrent-search-input" placeholder="Filter by name or info hash..." aria-label="Search torrents" autocapitalize="none" autocorrect="off" spellcheck="false">
+        </div>
+      </div>
+
+      <!-- Live Bandwidth Sparkline Visualizer -->
+      <div class="bandwidth-monitor-panel">
+        <div class="monitor-header">
+          <span class="monitor-title">LIVE BANDWIDTH GRAPH (60s)</span>
+          <div class="monitor-legend">
+            <span class="legend-item"><span class="legend-dot down"></span> Download</span>
+            <span class="legend-item"><span class="legend-dot up"></span> Upload</span>
+          </div>
+        </div>
+        <canvas id="bandwidth-canvas" width="1200" height="90"></canvas>
+      </div>
+
+      <!-- Torrents List / Grid Section -->
+      <section class="torrents-container" id="torrents-list-view">
+        <!-- Empty State Container -->
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+          </div>
+          <h2 class="empty-title">No Active Torrents</h2>
+          <p class="empty-desc">Add a magnet link or drag and drop a <code>.torrent</code> file to ignite high-speed P2P downloading.</p>
+          <div class="empty-actions">
+            <button class="btn btn-primary" id="btn-empty-add-magnet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14m-7-7h14"/>
+              </svg>
+              <span>Add Magnet Link</span>
+            </button>
+            <button class="btn btn-secondary" id="btn-empty-demo-torrent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Try Legal Test Torrent</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic Torrents Cards will be rendered here -->
+        <div class="torrents-grid" id="torrents-grid"></div>
+      </section>
+    </main>
+
+    <!-- Backdrop for Drawer on Mobile/Desktop -->
+    <div class="drawer-backdrop" id="drawer-backdrop" aria-hidden="true"></div>
+
+    <!-- Slide-Over Torrent Detail Inspector Panel -->
+    <aside class="detail-drawer" id="detail-drawer" aria-hidden="true">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <span class="drawer-badge" id="drawer-status-badge">DOWNLOADING</span>
+          <h3 class="drawer-title" id="drawer-torrent-title">Torrent Details</h3>
+          <span class="drawer-hash font-mono" id="drawer-torrent-hash">HASH: ...</span>
+        </div>
+        <div class="drawer-header-actions">
+          <button class="btn btn-secondary btn-sm" id="btn-drawer-pause-toggle" title="Pause or Resume Torrent">
+            <svg id="drawer-pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            <span id="btn-drawer-pause-text">Pause</span>
+          </button>
+          <button class="btn btn-turbo btn-sm" id="btn-drawer-boost" title="⚡ Turbo Boost this torrent (Inject live community trackers & force swarm re-announce)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <span id="btn-drawer-boost-text">Turbo Boost</span>
+          </button>
+          <button class="btn-icon" id="btn-close-drawer" aria-label="Close Inspector">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drawer Navigation Tabs -->
+      <div class="drawer-tabs">
+        <button class="drawer-tab-btn active" data-drawer-tab="overview">Overview</button>
+        <button class="drawer-tab-btn" data-drawer-tab="pieces">Piece Matrix</button>
+        <button class="drawer-tab-btn" data-drawer-tab="peers">Peers & Swarm (<span id="drawer-peer-count">0</span>)</button>
+        <button class="drawer-tab-btn" data-drawer-tab="files">Files (<span id="drawer-file-count">0</span>)</button>
+      </div>
+
+      <!-- Drawer Tab Content Bodies -->
+      <div class="drawer-content">
+        <!-- Overview Tab -->
+        <div class="drawer-tab-pane active" id="tab-pane-overview">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="m-label">DOWNLOADED / TOTAL</span>
+              <span class="m-val font-mono" id="ov-downloaded">0 B / 0 B</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">TRANSFER RATE</span>
+              <span class="m-val font-mono" id="ov-rates">↓ 0 B/s | ↑ 0 B/s</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">ESTIMATED TIME (ETA)</span>
+              <span class="m-val font-mono" id="ov-eta">--</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">PIECES</span>
+              <span class="m-val font-mono" id="ov-pieces">0 pieces × 0 KB</span>
+            </div>
+          </div>
+
+          <div class="drawer-section">
+            <h4 class="section-title">Save Directory</h4>
+            <div class="code-box font-mono" id="ov-savedir">./downloads</div>
+          </div>
+
+          <div class="drawer-section">
+            <div class="section-title-row">
+              <h4 class="section-title">Active Trackers (<span id="ov-trackers-count">0</span>)</h4>
+              <button class="btn-xs" id="btn-refresh-trackers" title="Harvest latest live trackers & force re-announce">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                <span>Re-Announce</span>
+              </button>
+            </div>
+            <ul class="trackers-list font-mono" id="ov-trackers-list">
+              <li>Connecting to DHT & Trackers...</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Live Piece Matrix Tab -->
+        <div class="drawer-tab-pane" id="tab-pane-pieces">
+          <div class="pieces-header">
+            <div class="pieces-info">
+              <span>Pieces Downloaded: <strong id="piece-stat-counts" class="font-mono">0 / 0</strong></span>
+              <span class="piece-legend">
+                <span class="p-dot verified"></span> Complete
+                <span class="p-dot pending"></span> Missing
+              </span>
+            </div>
+            <div class="piece-hover-tip font-mono" id="piece-hover-tip">Tap, drag, or hover pieces to inspect</div>
+          </div>
+          <div class="canvas-container">
+            <canvas id="pieces-canvas" width="600" height="280"></canvas>
+          </div>
+        </div>
+
+        <!-- Peers Tab -->
+        <div class="drawer-tab-pane" id="tab-pane-peers">
+          <!-- Swarm Optimizer Control Banner -->
+          <div class="swarm-optimizer-banner">
+            <div class="optimizer-banner-left">
+              <span class="optimizer-pulse-dot"></span>
+              <div class="optimizer-banner-text">
+                <strong>Swarm Quality & Choke Eviction Engine</strong>
+                <span id="optimizer-status-text">Continuous peer scoring & choke eviction active</span>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-optimize-swarm" title="Trigger instant peer quality evaluation and eviction cycle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              <span>Optimize Swarm</span>
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="peers-table">
+              <thead>
+                <tr>
+                  <th>IP & Port</th>
+                  <th>Client</th>
+                  <th>Quality Score</th>
+                  <th>Down Speed</th>
+                  <th>Up Speed</th>
+                  <th>Downloaded</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="peers-table-body">
+                <tr><td colspan="7" class="text-center">Searching swarm for peers...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Files Tab -->
+        <div class="drawer-tab-pane" id="tab-pane-files">
+          <div class="files-header">
+            <div class="files-header-info">
+              <span class="files-title">Swarm Files:</span>
+              <span class="files-summary font-mono" id="files-summary-text">0 files</span>
+            </div>
+            <a id="btn-download-all-zip" href="#" class="btn btn-turbo btn-sm" download title="Stream entire torrent as an on-the-fly .zip directly to your local PC without server storage">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <span>Download All as ZIP</span>
+            </a>
+          </div>
+          <div class="mobile-download-tip">
+            <span class="tip-icon">📱</span>
+            <div><strong>iPhone / Mobile Notice:</strong> iOS Safari terminates chunked ZIP streams if the screen auto-locks. For movies, tap <strong>Download</strong> next to the video file below — it supports background resuming and plays natively without unzipping!</div>
+          </div>
+          <div class="files-list" id="files-list-container">
+            <!-- Dynamically populated files -->
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Modal: Add Magnet Link -->
+    <div class="modal-backdrop" id="modal-magnet" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Add Magnet URI</h3>
+          <button class="btn-close-modal" id="btn-close-magnet-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <label for="magnet-input" class="form-label">Magnet Link or InfoHash</label>
+          <textarea id="magnet-input" class="form-control font-mono" rows="4" placeholder="magnet:?xt=urn:btih:..." autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off"></textarea>
+          <div class="sample-links">
+            <span class="sample-label">Quick Test Torrents:</span>
+            <button class="chip-btn" id="chip-ubuntu">Ubuntu 24.04 ISO</button>
+            <button class="chip-btn" id="chip-bigbuck">Big Buck Bunny (4K Streamable)</button>
+            <button class="chip-btn" id="chip-sintel">Sintel (Animation Movie)</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-cancel-magnet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>Cancel</span>
+          </button>
+          <button class="btn btn-primary" id="btn-submit-magnet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14m-7-7h14"/>
+            </svg>
+            <span>Start Download</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Upload .torrent File -->
+    <div class="modal-backdrop" id="modal-upload" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Upload .torrent File</h3>
+          <button class="btn-close-modal" id="btn-close-upload-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="drop-zone" id="torrent-drop-zone">
+            <input type="file" id="torrent-file-input" accept=".torrent" class="file-input-hidden">
+            <div class="drop-content">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+              <p class="drop-text">Drag & drop your <strong>.torrent</strong> file here</p>
+              <span class="drop-subtext">or tap to browse files on your device</span>
+            </div>
+            <div class="selected-file-info" id="selected-file-info" style="display: none;">
+              <span class="file-name font-mono" id="selected-file-name">filename.torrent</span>
+              <button class="btn-icon danger" id="btn-clear-file" title="Clear file selection" aria-label="Clear file selection">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-cancel-upload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>Cancel</span>
+          </button>
+          <button class="btn btn-primary" id="btn-submit-upload" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14m-7-7h14"/>
+            </svg>
+            <span>Upload & Start</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Search Swarms & Auto-Filter -->
+    <div class="modal-backdrop" id="modal-search" aria-hidden="true">
+      <div class="modal-card modal-large">
+        <div class="modal-header">
+          <div class="stream-title-box">
+            <span class="stream-tag">SWARM DISCOVERY & FILTER</span>
+            <h3 class="modal-title">Search & Auto-Add Torrents</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-search-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="search-modal-nav">
+          <button class="search-tab-btn active" id="search-tab-indexer" data-tab="indexer">Global Swarm Indexer</button>
+          <button class="search-tab-btn" id="search-tab-sniffer" data-tab="sniffer">Webpage Link Sniffer</button>
+        </div>
+
+        <div class="modal-body search-modal-body">
+          <!-- View 1: Global Swarm Indexer Search -->
+          <div class="search-view active" id="view-indexer">
+            <div class="search-input-group">
+              <input type="text" id="indexer-search-input" class="form-control" placeholder="Search movies, Linux ISOs, open source software, music..." autocapitalize="none" autocorrect="off" spellcheck="false">
+              <button class="btn btn-primary" id="btn-execute-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span>Search</span>
+              </button>
+            </div>
+
+            <!-- Auto-Add Switch Option -->
+            <div class="auto-filter-option">
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-auto-add">
+                <span class="slider"></span>
+              </label>
+              <div class="auto-filter-text">
+                <strong>Auto-Add Healthiest Swarm (Zero Clicks)</strong>
+                <p>Automatically filters the #1 torrent with the most seeders and starts downloading immediately upon searching.</p>
+              </div>
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div class="sample-links">
+              <span class="sample-label">Trending Searches:</span>
+              <button class="chip-btn search-suggest-chip" data-query="Ubuntu">Ubuntu Linux</button>
+              <button class="chip-btn search-suggest-chip" data-query="Debian">Debian</button>
+              <button class="chip-btn search-suggest-chip" data-query="Blender">Blender 3D</button>
+              <button class="chip-btn search-suggest-chip" data-query="Big Buck Bunny">Big Buck Bunny</button>
+            </div>
+
+            <!-- Search Results Area -->
+            <div class="search-results-list" id="search-results-container">
+              <div class="search-placeholder">
+                <p>Type a query above to search across active swarms and filter by maximum seeders for high speed.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 2: Webpage Link Sniffer -->
+          <div class="search-view" id="view-sniffer" style="display: none;">
+            <p class="sniffer-desc">Found a webpage or forum thread with magnet links? Paste the webpage URL below and HyperTorrent will auto-extract, filter, and add all healthy magnets:</p>
+            <div class="search-input-group">
+              <input type="url" id="sniffer-url-input" class="form-control" placeholder="https://example.com/download-page" autocapitalize="none" autocorrect="off" spellcheck="false">
+              <button class="btn btn-primary" id="btn-execute-sniff">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span>Extract Magnets</span>
+              </button>
+            </div>
+
+            <div class="search-results-list" id="sniffer-results-container">
+              <div class="search-placeholder">
+                <p>Paste any web page link above to automatically parse and filter magnet links.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: In-Flight Media Streamer -->
+    <div class="modal-backdrop" id="modal-stream" aria-hidden="true">
+      <div class="modal-card modal-large">
+        <div class="modal-header">
+          <div class="stream-title-box">
+            <span class="stream-tag">LIVE P2P STREAM</span>
+            <h3 class="modal-title" id="stream-file-title">Media Streaming</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-stream-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body stream-player-body">
+          <div class="video-wrapper">
+            <video id="stream-video-player" controls preload="metadata" playsinline webkit-playsinline>
+              Your browser does not support HTML5 video streaming.
+            </video>
+          </div>
+          <div class="stream-telemetry">
+            <span>Buffer Health: <strong id="stream-buffer-status">Streaming directly from peer swarm</strong></span>
+            <span class="font-mono" id="stream-file-size">0 MB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Proxy Settings — ISP Throttle Bypass -->
+    <div class="modal-backdrop" id="modal-proxy" aria-hidden="true">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="stream-title-box">
+            <span class="stream-tag proxy-tag">ISP BYPASS</span>
+            <h3 class="modal-title">Proxy Settings</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-proxy-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Proxy Enable/Disable Toggle -->
+          <div class="auto-filter-option proxy-toggle-row">
+            <label class="toggle-switch">
+              <input type="checkbox" id="proxy-enabled-toggle">
+              <span class="slider"></span>
+            </label>
+            <div class="auto-filter-text">
+              <strong>Route Traffic Through Proxy</strong>
+              <p>Enable to bypass ISP deep packet inspection (DPI) and BitTorrent traffic throttling.</p>
+            </div>
+          </div>
+
+          <!-- Proxy Type Selector -->
+          <div class="proxy-form-group">
+            <label class="form-label" for="proxy-type-select">Proxy Type</label>
+            <div class="proxy-type-chips" id="proxy-type-chips">
+              <button class="chip-btn proxy-type-chip active" data-proxy-type="socks5">SOCKS5 (Recommended)</button>
+              <button class="chip-btn proxy-type-chip" data-proxy-type="http">HTTP</button>
+              <button class="chip-btn proxy-type-chip" data-proxy-type="https">HTTPS</button>
+            </div>
+          </div>
+
+          <!-- Host & Port -->
+          <div class="proxy-host-row">
+            <div class="proxy-form-group proxy-host-input">
+              <label class="form-label" for="proxy-host">Host / IP Address</label>
+              <input type="text" id="proxy-host" class="form-control font-mono" placeholder="127.0.0.1 or proxy.example.com" autocapitalize="none" autocorrect="off" spellcheck="false">
+            </div>
+            <div class="proxy-form-group proxy-port-input">
+              <label class="form-label" for="proxy-port">Port</label>
+              <input type="number" id="proxy-port" class="form-control font-mono" placeholder="1080" min="1" max="65535">
+            </div>
+          </div>
+
+          <!-- Authentication (optional) -->
+          <div class="proxy-auth-section">
+            <label class="form-label">Authentication (Optional)</label>
+            <div class="proxy-host-row">
+              <div class="proxy-form-group proxy-host-input">
+                <input type="text" id="proxy-username" class="form-control font-mono" placeholder="Username" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+              </div>
+              <div class="proxy-form-group proxy-host-input">
+                <input type="password" id="proxy-password" class="form-control font-mono" placeholder="Password" autocomplete="off">
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Connection Status -->
+          <div class="proxy-status-card" id="proxy-status-card">
+            <div class="proxy-status-row">
+              <span class="pulse-indicator" id="proxy-status-dot"></span>
+              <span class="proxy-status-text" id="proxy-status-text">Not configured</span>
+            </div>
+            <span class="proxy-latency font-mono" id="proxy-latency"></span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-proxy-test" title="Test proxy connectivity">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Test Connection</span>
+          </button>
+          <button class="btn btn-primary" id="btn-proxy-save">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Save & Apply</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Disk Storage & Auto-Cleanup Manager -->
+    <div class="modal-backdrop" id="modal-disk" aria-hidden="true">
+      <div class="modal-card modal-large">
+        <div class="modal-header">
+          <div class="stream-title-box">
+            <span class="stream-tag disk-tag">STORAGE & SEEDBOX HYGIENE</span>
+            <h3 class="modal-title">Live Disk Space & Auto-Cleanup</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-disk-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body disk-modal-body">
+          <!-- Big Visual SSD Gauge Card -->
+          <div class="disk-overview-card">
+            <div class="disk-overview-main">
+              <div class="disk-gauge-visual">
+                <div class="disk-gauge-circle" id="modal-disk-circle">
+                  <span class="disk-gauge-percent font-mono" id="modal-disk-percent">0%</span>
+                  <span class="disk-gauge-label">USED</span>
+                </div>
+              </div>
+              <div class="disk-overview-details">
+                <div class="disk-detail-item">
+                  <span class="detail-label">FREE DISK SPACE</span>
+                  <span class="detail-val font-mono" id="modal-disk-free" style="color: var(--cyan-400);">-- GB</span>
+                </div>
+                <div class="disk-detail-item">
+                  <span class="detail-label">USED DISK SPACE</span>
+                  <span class="detail-val font-mono" id="modal-disk-used" style="color: var(--amber-500);">-- GB</span>
+                </div>
+                <div class="disk-detail-item">
+                  <span class="detail-label">TOTAL SSD CAPACITY</span>
+                  <span class="detail-val font-mono" id="modal-disk-total">-- GB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Progress Meter -->
+            <div class="disk-main-meter-track">
+              <div class="disk-main-meter-fill" id="modal-disk-meter-fill" style="width: 0%;"></div>
+            </div>
+            <div class="disk-meter-legend font-mono">
+              <span>0 GB</span>
+              <span id="modal-disk-status-caption">Storage Health: Normal</span>
+              <span id="modal-disk-max-caption">Total SSD</span>
+            </div>
+          </div>
+
+          <!-- Auto-Cleanup Settings Card -->
+          <div class="disk-section-card">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--cyan-400);">
+                  <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path>
+                </svg>
+                <span>Automated SSD Overflow Protection</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-auto-cleanup">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <p class="section-card-desc">Automatically purges completed torrents and wipes downloaded files from the VPS drive when storage reaches danger limits.</p>
+            
+            <div class="auto-cleanup-options" id="auto-cleanup-options-panel">
+              <div class="cleanup-option-row">
+                <label class="form-label" for="select-cleanup-threshold">Purge Trigger Threshold:</label>
+                <select id="select-cleanup-threshold" class="form-control form-control-sm font-mono" style="max-width: 220px;">
+                  <option value="80">When SSD > 80% Full</option>
+                  <option value="85">When SSD > 85% Full</option>
+                  <option value="90" selected>When SSD > 90% Full (Recommended)</option>
+                  <option value="95">When SSD > 95% Full</option>
+                </select>
+              </div>
+
+              <div class="cleanup-option-row">
+                <label class="form-label">Action Strategy:</label>
+                <div class="cleanup-checkbox-wrap">
+                  <label class="custom-checkbox-label">
+                    <input type="checkbox" id="chk-cleanup-delete-files" checked>
+                    <span>Permanently delete payload files from VPS disk (frees SSD space)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="cleanup-actions-bar">
+                <button class="btn btn-secondary btn-sm" id="btn-save-auto-cleanup">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <span>Save Auto-Protection Rules</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Instant Manual Cleanup Section -->
+          <div class="disk-section-card">
+            <div class="section-card-header">
+              <div class="section-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--rose-500);">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>Manual Storage Reclamation</span>
+              </div>
+              <span class="badge" id="modal-completed-summary">0 Completed (0 B)</span>
+            </div>
+            <p class="section-card-desc">Immediately purge completed torrents that you have already downloaded to your PC to reclaim SSD space.</p>
+            
+            <div class="manual-cleanup-controls">
+              <div class="cleanup-filter-group">
+                <select id="select-manual-age" class="form-control form-control-sm font-mono" style="max-width: 240px;">
+                  <option value="0">Purge All Completed Torrents</option>
+                  <option value="12">Older than 12 Hours</option>
+                  <option value="24">Older than 24 Hours</option>
+                  <option value="48">Older than 48 Hours</option>
+                </select>
+                <button class="btn btn-danger" id="btn-run-manual-cleanup">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  <span>Reclaim Disk Space Now</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- List of Completed Torrents that can be purged -->
+            <div class="completed-torrents-list" id="completed-torrents-container">
+              <div class="cleanup-empty-hint">No completed torrents to purge at this time.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-close-disk-modal-footer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>Close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Hyper-Speed Turbo Downloader (IDM-Style Multi-Stream Engine) -->
+    <div class="modal-backdrop" id="modal-turbo-downloader" aria-hidden="true">
+      <div class="modal-card modal-large turbo-modal-card">
+        <div class="modal-header">
+          <div class="stream-title-box">
+            <span class="stream-tag turbo-engine-tag">⚡ MULTI-STREAM TURBO ENGINE (IDM MODE)</span>
+            <h3 class="modal-title" id="turbo-modal-filename">Turbo Downloader</h3>
+          </div>
+          <button class="btn-close-modal" id="btn-close-turbo-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body turbo-modal-body">
+          <!-- Top Target File & Capability Pill -->
+          <div class="turbo-file-card">
+            <div class="turbo-file-meta">
+              <div class="turbo-file-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="12" y1="18" x2="12" y2="12"></line>
+                  <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+              </div>
+              <div class="turbo-file-text">
+                <div class="turbo-file-title" id="turbo-file-display-name">File Name</div>
+                <div class="turbo-file-specs font-mono">
+                  <span id="turbo-file-display-size">0.00 MB</span> • 
+                  <span id="turbo-storage-badge" class="badge badge-cyan">Direct Disk Stream</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thread Selector Chips -->
+            <div class="turbo-concurrency-control">
+              <span class="turbo-control-label">Parallel Streams:</span>
+              <div class="turbo-stream-chips" id="turbo-concurrency-chips">
+                <button class="chip-btn turbo-chip" data-streams="4">4 Streams</button>
+                <button class="chip-btn turbo-chip active" data-streams="8">8 Streams (Default)</button>
+                <button class="chip-btn turbo-chip" data-streams="16">16 Streams (Turbo)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Speedometer & Progress Section -->
+          <div class="turbo-telemetry-panel">
+            <div class="turbo-speed-row">
+              <div class="turbo-speed-box">
+                <span class="turbo-speed-label">CURRENT SPEED</span>
+                <span class="turbo-speed-value font-mono" id="turbo-speed-val">0.00 MB/s</span>
+              </div>
+              <div class="turbo-speed-box peak">
+                <span class="turbo-speed-label">PEAK SPEED</span>
+                <span class="turbo-speed-value font-mono" id="turbo-peak-speed-val">0.00 MB/s</span>
+              </div>
+              <div class="turbo-speed-box eta">
+                <span class="turbo-speed-label">TIME REMAINING</span>
+                <span class="turbo-speed-value font-mono" id="turbo-eta-val">--:--</span>
+              </div>
+            </div>
+
+            <!-- Master Progress Track -->
+            <div class="turbo-master-track">
+              <div class="turbo-master-fill" id="turbo-master-fill" style="width: 0%;"></div>
+            </div>
+
+            <div class="turbo-progress-legend font-mono">
+              <span id="turbo-progress-percent">0%</span>
+              <span id="turbo-progress-transferred">0 MB of 0 MB</span>
+              <span id="turbo-active-streams-count">0 / 8 Streams</span>
+            </div>
+          </div>
+
+          <!-- Iconic IDM Thread Segments Visualizer -->
+          <div class="turbo-threads-container">
+            <div class="turbo-threads-header">
+              <span class="turbo-threads-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--cyan-400);">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                Active Connection Segments (Dynamic IDM Work-Stealing)
+              </span>
+              <span class="badge" id="turbo-engine-status-badge">READY</span>
+            </div>
+
+            <div class="turbo-threads-grid" id="turbo-threads-grid">
+              <!-- Dynamically populated thread progress bars -->
+            </div>
+          </div>
+
+          <!-- Mobile Assistance & External Downloader Integration -->
+          <div class="turbo-mobile-assist-card" id="turbo-mobile-assist-card">
+            <div class="mobile-assist-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--amber-500);">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+              <span>Mobile & External Downloader Options:</span>
+            </div>
+            <p class="mobile-assist-text">
+              Screen Wake Lock is active to protect against screen-lock freezes. For background downloads on Android/iOS, you can also 1-tap copy the direct stream URL for 1DM, ADM, or IDM:
+            </p>
+            <div class="mobile-assist-actions">
+              <button class="btn btn-secondary btn-sm" id="btn-copy-stream-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy 1-Click Stream URL (for 1DM / ADM)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer turbo-modal-footer">
+          <button class="btn btn-secondary" id="btn-turbo-cancel" style="display: none;">Cancel</button>
+          <button class="btn btn-secondary" id="btn-turbo-pause" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+            <span id="turbo-pause-btn-text">Pause</span>
+          </button>
+          <button class="btn btn-primary" id="btn-start-turbo-download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:16px;height:16px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>Start Turbo Download</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Master Authentication & Initial Setup -->
+    <div class="modal-backdrop" id="modal-auth" aria-hidden="true" style="z-index: 99999;">
+      <div class="modal-card auth-modal-card">
+        <div class="modal-header auth-modal-header">
+          <div class="auth-header-title">
+            <div class="auth-icon-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title" id="auth-modal-title">Master Access Lock</h3>
+              <p class="auth-modal-subtitle" id="auth-modal-subtitle">Authenticate to access HyperTorrent dashboard</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div id="auth-error-banner" class="auth-error-banner" style="display: none;"></div>
+
+          <!-- Google OAuth 2.0 Quick Sign-In Option -->
+          <div class="google-auth-container" id="google-auth-container" style="display: none;">
+            <a href="/api/auth/google" class="btn btn-google-signin" id="btn-google-login">
+              <svg class="google-svg-icon" viewBox="0 0 24 24" width="20" height="20">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </a>
+            <div class="auth-separator">
+              <span>or sign in with Master Password</span>
+            </div>
+          </div>
+
+          <form id="auth-form" onsubmit="return false;">
+            <!-- Setup Fields (Visible if system not configured) -->
+            <div id="auth-setup-fields" style="display: none;">
+              <div class="auth-setup-banner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>First-time setup: Establish a secure Master Password to protect downloads and generate your API key.</span>
+              </div>
+              <div class="form-group" style="margin-top: 1rem;">
+                <label for="setup-password-input" class="form-label">Set Master Password</label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="setup-password-input" class="form-control" placeholder="Minimum 6 characters" autocomplete="new-password">
+                  <button type="button" class="btn-toggle-pwd" id="btn-toggle-setup-pwd" title="Toggle visibility">👁</button>
+                </div>
+              </div>
+              <div class="form-group" style="margin-top: 1rem;">
+                <label for="setup-confirm-input" class="form-label">Confirm Master Password</label>
+                <input type="password" id="setup-confirm-input" class="form-control" placeholder="Re-enter password" autocomplete="new-password">
+              </div>
+            </div>
+
+            <!-- Login Fields (Visible if already configured) -->
+            <div id="auth-login-fields">
+              <div class="form-group">
+                <label for="login-password-input" class="form-label">Master Password</label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="login-password-input" class="form-control" placeholder="Enter master password..." autocomplete="current-password">
+                  <button type="button" class="btn-toggle-pwd" id="btn-toggle-login-pwd" title="Toggle visibility">👁</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="auth-actions-row" style="margin-top: 1.5rem;">
+              <button type="submit" class="btn btn-primary auth-submit-btn" id="btn-submit-auth">
+                <span id="auth-btn-text">Unlock Dashboard</span>
+                <div class="spinner" id="auth-spinner" style="display: none;"></div>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Security & API Key Management -->
+    <div class="modal-backdrop" id="modal-security" aria-hidden="true">
+      <div class="modal-card security-modal-card">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <div class="auth-icon-badge" style="background: rgba(0, 242, 254, 0.15); color: var(--cyan-400);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:20px;height:20px;">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title">Security & API Keys</h3>
+              <p class="auth-modal-subtitle">Access control, extension tokens, and limits</p>
+            </div>
+          </div>
+          <button class="btn-close-modal" id="btn-close-security-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Navigation Tabs Inside Security Modal -->
+          <div class="sec-nav-tabs" id="sec-nav-tabs">
+            <button class="sec-tab-btn active" data-sectab="master" id="tab-sec-master">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <span>Master Security</span>
+            </button>
+            <button class="sec-tab-btn" data-sectab="google" id="tab-sec-google">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <span>Google OAuth & VPS</span>
+            </button>
+            <button class="sec-tab-btn" data-sectab="users" id="tab-sec-users">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <span>Users & Quotas</span>
+              <span class="badge" id="sec-users-count-badge">0</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: MASTER SECURITY & API KEY -->
+          <div class="sec-tab-content active" id="sec-pane-master">
+            <!-- API Key Section -->
+            <div class="security-card-box">
+              <div class="sec-box-header">
+                <span class="sec-box-title">⚡ Browser Extension & IDM API Key</span>
+                <button class="btn btn-secondary btn-sm" id="btn-regen-api-key" title="Regenerate new API Key">Regenerate Key</button>
+              </div>
+              <p class="sec-box-desc">
+                Use this secret key in the HyperTorrent browser extension or external tools (IDM, curl, scripts) to authenticate requests.
+              </p>
+              <div class="api-key-display-row">
+                <input type="password" id="display-api-key" class="form-control font-mono" readonly value="Loading...">
+                <button class="btn btn-secondary" id="btn-toggle-key-vis" title="Reveal / Hide Key">👁</button>
+                <button class="btn btn-primary" id="btn-copy-api-key" title="Copy API Key to Clipboard">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copy</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Access Control Settings -->
+            <div class="security-card-box" style="margin-top: 1.25rem;">
+              <span class="sec-box-title">🛡️ Access Guard & Rate Limiting</span>
+              <div class="sec-setting-row">
+                <div>
+                  <strong>Master Password Protection</strong>
+                  <p class="sec-box-desc">Require authentication to view dashboard and control downloads</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-auth-enabled" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="sec-setting-row">
+                <div>
+                  <strong>Localhost / 127.0.0.1 Bypass</strong>
+                  <p class="sec-box-desc">Skip login prompt when running on local machine desktop</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-local-bypass">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="sec-setting-row">
+                <div>
+                  <strong>Express Shield Rate Limiter</strong>
+                  <p class="sec-box-desc">Throttles brute-force logins, spam adds, and rapid searches</p>
+                </div>
+                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--emerald-400); border: 1px solid var(--emerald-500);">ACTIVE</span>
+              </div>
+            </div>
+
+            <!-- Change Master Password Form -->
+            <div class="security-card-box" style="margin-top: 1.25rem;">
+              <span class="sec-box-title">🔑 Change Master Password</span>
+              <div class="form-group" style="margin-top: 0.5rem;">
+                <label for="change-curr-pwd" class="form-label">Current Password</label>
+                <input type="password" id="change-curr-pwd" class="form-control" placeholder="Current master password">
+              </div>
+              <div class="form-group" style="margin-top: 0.5rem;">
+                <label for="change-new-pwd" class="form-label">New Password</label>
+                <input type="password" id="change-new-pwd" class="form-control" placeholder="New master password (min 6 chars)">
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-save-new-pwd" style="margin-top: 0.75rem;">
+                Update Password
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 2: GOOGLE OAUTH & VPS RULES -->
+          <div class="sec-tab-content" id="sec-pane-google" style="display: none;">
+            <div class="security-card-box">
+              <div class="sec-setting-row" style="padding-top:0;">
+                <div>
+                  <strong style="font-size:0.95rem;">Enable Google OAuth 2.0</strong>
+                  <p class="sec-box-desc">Allow users to log in securely with their Google / Gmail accounts</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-google-auth">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="security-card-box" style="margin-top: 1rem;">
+              <span class="sec-box-title">🔑 Google Cloud Credentials</span>
+              <p class="sec-box-desc">Created in Google Cloud Console > APIs & Services > Credentials > OAuth 2.0 Client ID (Web application)</p>
+
+              <div class="form-group" style="margin-top: 0.75rem;">
+                <label for="input-google-client-id" class="form-label">Client ID</label>
+                <input type="text" id="input-google-client-id" class="form-control font-mono" placeholder="xxxxxx-xxxxxx.apps.googleusercontent.com" autocapitalize="none" autocorrect="off" spellcheck="false">
+              </div>
+
+              <div class="form-group" style="margin-top: 0.75rem;">
+                <label for="input-google-client-secret" class="form-label">Client Secret</label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="input-google-client-secret" class="form-control font-mono" placeholder="GOCSPX-xxxxxxxxxxxxxxxxxxxx" autocapitalize="none" autocorrect="off" spellcheck="false">
+                  <button type="button" class="btn-toggle-pwd" id="btn-toggle-secret-vis" title="Toggle visibility">👁</button>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 0.75rem;">
+                <label class="form-label">Authorized Redirect URI (Paste this in Google Cloud Console)</label>
+                <div class="api-key-display-row">
+                  <input type="text" id="display-google-callback-url" class="form-control font-mono" readonly value="http://localhost:3000/api/auth/google/callback">
+                  <button class="btn btn-secondary" id="btn-copy-callback-url" title="Copy Redirect URL">Copy</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="security-card-box" style="margin-top: 1rem;">
+              <span class="sec-box-title">🛡️ VPS Access Rules & Roles</span>
+              
+              <div class="form-group" style="margin-top: 0.75rem;">
+                <label for="input-admin-emails" class="form-label">Master Admin Emails (Auto-Promoted to Full Admin)</label>
+                <input type="text" id="input-admin-emails" class="form-control" placeholder="admin@gmail.com, lead@company.com (comma separated)" autocapitalize="none" autocorrect="off" spellcheck="false">
+                <span class="sec-field-hint">Accounts matching these emails automatically receive Master Admin privileges.</span>
+              </div>
+
+              <div class="form-group" style="margin-top: 0.75rem;">
+                <label for="input-allowed-emails" class="form-label">Allowed User Emails Whitelist (Optional)</label>
+                <input type="text" id="input-allowed-emails" class="form-control" placeholder="Leave empty to allow all registered Google users" autocapitalize="none" autocorrect="off" spellcheck="false">
+              </div>
+
+              <div class="form-group" style="margin-top: 0.75rem;">
+                <label for="input-allowed-domains" class="form-label">Allowed Domain Whitelist (Optional)</label>
+                <input type="text" id="input-allowed-domains" class="form-control" placeholder="e.g. company.com, myteam.org" autocapitalize="none" autocorrect="off" spellcheck="false">
+                <span class="sec-field-hint">If specified, only users with matching email domains can log in.</span>
+              </div>
+            </div>
+
+            <div class="security-card-box" style="margin-top: 1rem;">
+              <span class="sec-box-title">📊 Default New User Quota</span>
+              <p class="sec-box-desc">Limits applied to regular users so they cannot hog server storage or network bandwidth.</p>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                <div class="form-group">
+                  <label for="input-quota-max-active" class="form-label">Max Active Torrents</label>
+                  <input type="number" id="input-quota-max-active" class="form-control" min="1" max="20" value="3">
+                </div>
+                <div class="form-group">
+                  <label for="input-quota-max-storage" class="form-label">Max Disk Quota (GB)</label>
+                  <input type="number" id="input-quota-max-storage" class="form-control" min="1" max="1000" value="20">
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 1.25rem;">
+              <button class="btn btn-primary" id="btn-save-google-config" style="width: 100%;">
+                Save Google OAuth & Access Rules
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 3: USERS & QUOTAS MANAGEMENT -->
+          <div class="sec-tab-content" id="sec-pane-users" style="display: none;">
+            <div class="users-pane-header">
+              <div>
+                <span class="sec-box-title" style="font-size:0.95rem;">Registered Users & Quota Telemetry</span>
+                <p class="sec-box-desc">Manage VPS user roles, view live personal storage, and adjust individual limits.</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-refresh-users">Refresh Users</button>
+            </div>
+
+            <div class="users-table-container">
+              <table class="users-table" id="users-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Torrents</th>
+                    <th>Storage Used</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+                      Loading users...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-close-security-footer">Close</button>
+          <button class="btn btn-primary" id="btn-save-sec-settings">Save Master Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: User Profile & Quick Settings -->
+    <div class="modal-backdrop" id="modal-profile" aria-hidden="true">
+      <div class="modal-card profile-modal-card">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="auth-icon-badge" style="background: rgba(0, 242, 254, 0.15); color: var(--cyan-400);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="width:20px;height:20px;">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div>
+              <h3 class="modal-title">User Account & Profile</h3>
+              <p class="auth-modal-subtitle" id="profile-modal-subtitle">Session Details & Controls</p>
+            </div>
+          </div>
+          <button class="btn-close-modal" id="btn-close-profile-modal" aria-label="Close modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body profile-modal-body">
+          <!-- Profile Identity Card -->
+          <div class="profile-hero-card">
+            <div class="profile-hero-avatar-wrap">
+              <img class="profile-hero-avatar" id="profile-hero-avatar" src="" alt="Avatar" style="display: none;" />
+              <div class="profile-hero-initials" id="profile-hero-initials">U</div>
+              <span class="profile-hero-status-dot online" id="profile-hero-status"></span>
+            </div>
+            <div class="profile-hero-info">
+              <div class="profile-hero-name-row">
+                <h4 class="profile-hero-name" id="profile-hero-name">Master Admin</h4>
+                <span class="user-role-tag admin" id="profile-hero-role">ADMIN</span>
+              </div>
+              <span class="profile-hero-email font-mono" id="profile-hero-email">admin@local</span>
+            </div>
+          </div>
+
+          <!-- Quick Telemetry & Stats -->
+          <div class="profile-telemetry-grid">
+            <div class="profile-telemetry-box">
+              <span class="profile-telemetry-label">Role</span>
+              <span class="profile-telemetry-val" id="profile-stat-role">ADMIN</span>
+            </div>
+            <div class="profile-telemetry-box">
+              <span class="profile-telemetry-label">Active Downloads</span>
+              <span class="profile-telemetry-val font-mono" id="profile-stat-active">0 Active</span>
+            </div>
+            <div class="profile-telemetry-box">
+              <span class="profile-telemetry-label">Disk Storage</span>
+              <span class="profile-telemetry-val font-mono" id="profile-stat-storage">Live</span>
+            </div>
+          </div>
+
+          <!-- Actions & System Management Hub -->
+          <div class="profile-actions-list">
+            <button class="profile-action-btn" id="btn-profile-open-security" title="Open Security & Access Hub">
+              <div class="profile-action-icon" style="background: rgba(0, 242, 254, 0.12); color: var(--cyan-400);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+              <div class="profile-action-meta">
+                <span class="profile-action-title">Security & API Keys</span>
+                <span class="profile-action-desc">Manage API tokens, Google OAuth & users</span>
+              </div>
+              <svg class="profile-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+
+            <button class="profile-action-btn" id="btn-profile-open-disk" title="Open Storage & Auto-Cleanup">
+              <div class="profile-action-icon" style="background: rgba(139, 92, 246, 0.12); color: var(--violet-400);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                  <path d="M6 12h.01M10 12h.01M14 12h.01M18 12h.01"></path>
+                  <path d="M2 16h20"></path>
+                </svg>
+              </div>
+              <div class="profile-action-meta">
+                <span class="profile-action-title">Disk Storage & Cleanup</span>
+                <span class="profile-action-desc">Storage gauges & auto-cleanup limits</span>
+              </div>
+              <svg class="profile-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+
+            <button class="profile-action-btn" id="btn-profile-open-proxy" title="Open Proxy Settings">
+              <div class="profile-action-icon" style="background: rgba(245, 158, 11, 0.12); color: #fbbf24;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </div>
+              <div class="profile-action-meta">
+                <span class="profile-action-title">Proxy Settings</span>
+                <span class="profile-action-desc">SOCKS5/HTTP tunnel for ISP bypass</span>
+              </div>
+              <svg class="profile-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+
+            <button class="profile-action-btn profile-action-logout" id="btn-profile-logout" title="Lock Session / Log Out">
+              <div class="profile-action-icon" style="background: rgba(239, 68, 68, 0.12); color: var(--rose-400);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+              </div>
+              <div class="profile-action-meta">
+                <span class="profile-action-title">Log Out / Lock Session</span>
+                <span class="profile-action-desc">End your authenticated session safely</span>
+              </div>
+              <svg class="profile-action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="btn-close-profile-modal-footer" style="width: 100%;">Close Profile</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Mobile Bottom Navigation Bar (Optimized for iOS & Android) -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Mobile Bottom Navigation">
+      <button class="mobile-nav-item active" id="mob-nav-torrents" aria-label="View Torrents">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        <span>Torrents</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-search" aria-label="Search Swarms">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span>Search</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-add" aria-label="Add Magnet">
+        <div class="mobile-nav-fab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5v14m-7-7h14"/>
+          </svg>
+        </div>
+        <span>+ Magnet</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-turbo" aria-label="Turbo Boost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <span>Turbo</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-profile" aria-label="User Profile & Settings">
+        <div class="mob-profile-avatar-wrap">
+          <img class="mob-user-avatar" id="mob-nav-user-avatar" src="" alt="Avatar" style="display: none;" />
+          <span class="mob-user-initials" id="mob-nav-user-initials" style="display: none;">U</span>
+          <svg class="mob-user-default-icon" id="mob-nav-user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <span id="mob-nav-profile-label">Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Multi-Stream IDM Turbo Engine -->
+  <script src="js/turboDownloader.js"></script>
+  <!-- Client Application Logic -->
+  <script src="js/app.js?v=2.2.2"></script>
+</body>
+</html>

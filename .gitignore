@@ -1,0 +1,11 @@
+node_modules/
+release/
+downloads/
+torrents/
+session.json
+proxy-config.json
+security-config.json
+users.json
+.env
+*.tar.gz
+*.zip

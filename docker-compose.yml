@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  hypertorrent:
+    build: .
+    image: hypertorrent:latest
+    container_name: hypertorrent-seedbox
+    restart: unless-stopped
+    ports:
+      - "3000:3000"       # Web Dashboard & Remote API
+      - "6881:6881"       # BitTorrent TCP peer wire port
+      - "6881:6881/udp"   # BitTorrent UDP / µTP / DHT port
+    volumes:
+      # Persistent storage on host VPS:
+      - ./downloads:/app/downloads
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TORRENT_PORT=6881
+      - DOWNLOAD_DIR=/app/downloads
+      - NODE_OPTIONS=--max-old-space-size=1536
+      - MAX_ACTIVE_TORRENTS=4
+      - MAX_CONNS_PER_TORRENT=35
+      - AUTO_PAUSE_COMPLETED=true
+    deploy:
+      resources:
+        limits:
+          memory: 1800M
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
